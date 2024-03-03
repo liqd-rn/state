@@ -9,7 +9,7 @@ type SetStateOptions =
 
 export class State<T>
 {
-    private hash: string = '';
+    private hash?: string;
     private value: T | undefined;
     private setters = new Set<React.Dispatch<React.SetStateAction<T|undefined>>>();
     private cache: boolean = false;
@@ -41,10 +41,14 @@ export class State<T>
 
         this.cache ||= cache;
 
-        if( force || typeof value === 'object' || this.value !== value ) //object could change internaly even if it is the same object
+        if( force || this.value !== value || typeof value === 'object' ) //object could change internaly even if it is the same object
         {
-            // TODO dont calculate hash when force == true, calculate only before comparison
-            const hash = Hash( value );
+            const hash = force ? undefined : Hash( value );
+
+            if( !force && !this.hash )
+            {
+                this.hash = Hash( this.value );
+            }
 
             // TODO do basic comparison first for array / object => array.lenth, array[0], Object.keys.length and do not save hash then
             if( force || this.hash !== hash )

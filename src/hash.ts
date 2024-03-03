@@ -1,3 +1,7 @@
+const HashIndex = new WeakMap<Function | object, string>();
+
+const randomID = () => Math.floor( Math.random() * ( 2**52 ));
+
 function cyrb64( str: string, seed: number = 0 )
 {
     let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
@@ -17,29 +21,44 @@ function cyrb64( str: string, seed: number = 0 )
     return [ h2>>>0, h1>>>0 ];
 };
 
+function getIndexHash( val: Function | object ): string
+{
+    if( !HashIndex.has( val ))
+    {
+        HashIndex.set( val, ( val instanceof Function ? 'function ' + val.name : 'instance ' + val.constructor.name ) + '_' + randomID());
+    }
+
+    return HashIndex.get( val )!;
+}
+
 //TODO if object is of different constructor.name return random ID so its always different
-function stableStringify( obj: any, sort: boolean ): string
+function stableStringify( obj: any, sort: boolean, visited: Set<any> ): string
 {
     if( typeof obj === 'undefined' ){ return '' }
     if( typeof obj !== 'object' || obj === null ){ return JSON.stringify( obj )}
-    if( obj instanceof Date ){ return stableStringify( obj.toISOString(), sort )}
-    if( obj instanceof RegExp ){ return stableStringify( obj.toString(), sort )}
-    if( obj instanceof Set ){ return stableStringify([...obj], sort )}
-    if( obj instanceof Map ){ return stableStringify( Object.fromEntries([...obj.entries()]), sort )}
+    if( obj instanceof Function ){ return getIndexHash( obj )}
+    if( obj instanceof Date ){ return obj.toISOString()}
+    if( obj instanceof RegExp ){ return obj.toString()}
+    if( obj instanceof Set ){ return stableStringify([...obj], true, visited )}
+    if( obj instanceof Map ){ return stableStringify( Object.fromEntries([...obj.entries()]), true, visited )}
+
+    if( visited.has( obj )){ return '*Circular*' } visited.add( obj );
+
     if( Array.isArray( obj ))
     {
-        const arr = obj.map( v => stableStringify( v, sort )); sort && arr.sort();
+        const arr = obj.map( v => stableStringify( v, sort, visited )); sort && arr.sort();
 
         return `[${ arr.join(',') }]`;
     }
+    if( obj.constructor !== Object ){ return getIndexHash( obj )}
 
-    const pairs = Object.keys( obj ).sort().map( key => `${ JSON.stringify( key ) }:${ stableStringify( obj[key], sort )}`);
+    const pairs = Object.keys( obj ).sort().map( key => `${ JSON.stringify( key ) }:${ stableStringify( obj[key], sort, visited )}`);
 
     return `{${ pairs.join(',') }}`;
 }
 
 export default function Hash( obj: any ): string
 {
-    const [ h2, h1 ] = cyrb64( stableStringify( obj, false ), 0 );
+    const [ h2, h1 ] = cyrb64( stableStringify( obj, false, new Set() ), 0 );
     return h2.toString(36).padStart( 7, '0' ) + h1.toString(36).padStart( 7, '0' );
 }
