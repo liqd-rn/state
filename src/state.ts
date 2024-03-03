@@ -14,9 +14,9 @@ export class State<T>
     private setters = new Set<React.Dispatch<React.SetStateAction<T|undefined>>>();
     private cache: boolean = false;
 
-    public get<T>(): T | undefined
-    public get<T>( value?: T ): T
-    public get( value?: T ): T | undefined
+    public use<T>(): T | undefined
+    public use<T>( value?: T ): T
+    public use( value?: T ): T | undefined
     {
         value !== undefined && this.set( value );
         
@@ -45,7 +45,7 @@ export class State<T>
         {
             const hash = force ? undefined : Hash( value );
 
-            if( !force && !this.hash )
+            if( !force && this.hash === undefined )
             {
                 this.hash = Hash( this.value );
             }
@@ -55,6 +55,8 @@ export class State<T>
             {
                 this.hash = hash;
                 this.value = value;
+
+                // TODO emit warning if( this.value === value && force ) because React will not re-render
 
                 for( let setter of this.setters )
                 {
@@ -104,11 +106,11 @@ export class StateManager
         return StateManager.global ?? ( StateManager.global = new StateManager());
     }
 
-    public static get<T>( key: string ): T | undefined
-    public static get<T>( key: string, value: T ): T
-    public static get<T>( key: string, value?: T ): T | undefined
+    public static use<T>( key: string ): T | undefined
+    public static use<T>( key: string, value: T ): T
+    public static use<T>( key: string, value?: T ): T | undefined
     {
-        return StateManager.Global.get( key, value );
+        return StateManager.Global.use( key, value );
     }
 
     public static set<T>( key: string, value: T, options: SetStateOptions = {})
@@ -132,11 +134,11 @@ export class StateManager
         return state;
     }
 
-    public get<T>( key: string ): T | undefined
-    public get<T>( key: string, value: T ): T
-    public get<T>( key: string, value?: T ): T | undefined
+    public use<T>( key: string ): T | undefined
+    public use<T>( key: string, value: T ): T
+    public use<T>( key: string, value?: T ): T | undefined
     {
-        return this.state<T>( key ).get( value );
+        return this.state<T>( key ).use( value );
     }
 
     public set<T>( key: string, value: T, options: SetStateOptions = {})
