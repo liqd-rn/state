@@ -74,12 +74,7 @@ export class StateManager
     private static global?: StateManager;
     private static instances = new Map<string, StateManager>();
 
-    public static get Global()
-    {
-        return StateManager.global ?? ( StateManager.global = new StateManager());
-    }
-
-    public static get( name: string )
+    public static $( name: string )
     {
         let instance = StateManager.instances.get( name );
 
@@ -89,6 +84,23 @@ export class StateManager
         }
 
         return instance;
+    }
+
+    private static get Global()
+    {
+        return StateManager.global ?? ( StateManager.global = new StateManager());
+    }
+
+    public static get<T>( key: string ): T | undefined
+    public static get<T>( key: string, value: T ): T
+    public static get<T>( key: string, value?: T ): T | undefined
+    {
+        return StateManager.Global.get( key, value );
+    }
+
+    public static set<T>( key: string, value: T, cache: boolean = false )
+    {
+        return StateManager.Global.set( key, value, cache );
     }
 
     /* INSTANCE */
