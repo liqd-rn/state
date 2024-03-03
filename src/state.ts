@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Hash from './hash';
+import objectHash from '@liqd-js/fast-object-hash';
+
+type StateValue<T> = { value: T|undefined };
 
 type SetStateOptions = 
 {
@@ -11,7 +13,7 @@ export class State<T>
 {
     private hash?: string;
     private value: T | undefined;
-    private setters = new Set<React.Dispatch<React.SetStateAction<T|undefined>>>();
+    private setters = new Set<React.Dispatch<React.SetStateAction<StateValue<T>>>>();
     private cache: boolean = false;
 
     public use(): T | undefined
@@ -20,7 +22,7 @@ export class State<T>
     {
         value !== undefined && this.set( value );
         
-        const [ get, set ] = useState<T|undefined>( this.value );
+        const [ get, set ] = useState<StateValue<T>>({ value: this.value });
 
         this.setters.add( set );
 
@@ -32,7 +34,7 @@ export class State<T>
         },
         []);
 
-        return get;
+        return get.value;
     }
 
     public set( value: T, options: SetStateOptions = {})
@@ -41,13 +43,13 @@ export class State<T>
 
         this.cache ||= cache;
 
-        if( force || this.value !== value || typeof value === 'object' ) //object could change internaly even if it is the same object
+        if( force || this.value !== value || typeof value === 'object' )
         {
-            const hash = force ? undefined : Hash( value );
+            const hash = force ? undefined : objectHash( value );
 
             if( !force && this.hash === undefined )
             {
-                this.hash = Hash( this.value );
+                this.hash = objectHash( this.value );
             }
 
             // TODO do basic comparison first for array / object => array.lenth, array[0], Object.keys.length and do not save hash then
@@ -56,13 +58,11 @@ export class State<T>
                 this.hash = hash;
                 this.value = value;
 
-                // TODO emit warning if( this.value === value && force ) because React will not re-render
-
                 for( let setter of this.setters )
                 {
                     try
                     {
-                        setter( value );
+                        setter({ value });
                     }
                     catch( e )
                     {
