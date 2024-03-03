@@ -14,8 +14,8 @@ export class State<T>
     private setters = new Set<React.Dispatch<React.SetStateAction<T|undefined>>>();
     private cache: boolean = false;
 
-    public use<T>(): T | undefined
-    public use<T>( value?: T ): T
+    public use(): T | undefined
+    public use( value?: T ): T
     public use( value?: T ): T | undefined
     {
         value !== undefined && this.set( value );
