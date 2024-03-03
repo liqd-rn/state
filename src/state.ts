@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Hash from './hash';
 
+type SetStateOptions = 
+{
+    cache?: boolean 
+    force?: boolean
+};
+
 export class State<T>
 {
     private hash: string = '';
@@ -29,16 +35,18 @@ export class State<T>
         return get;
     }
 
-    public set( value: T, cache: boolean = false )
+    public set( value: T, options: SetStateOptions = {})
     {
+        const { cache = false, force = false } = options;
+
         this.cache ||= cache;
 
-        if( typeof value === 'object' || this.value !== value ) //object could change internaly even if it is the same object
+        if( force || typeof value === 'object' || this.value !== value ) //object could change internaly even if it is the same object
         {
             const hash = Hash( value );
 
             // TODO do basic comparison first for array / object => array.lenth, array[0], Object.keys.length and do not save hash then
-            if( this.hash !== hash )
+            if( force || this.hash !== hash )
             {
                 this.hash = hash;
                 this.value = value;
@@ -98,9 +106,9 @@ export class StateManager
         return StateManager.Global.get( key, value );
     }
 
-    public static set<T>( key: string, value: T, cache: boolean = false )
+    public static set<T>( key: string, value: T, options: SetStateOptions = {})
     {
-        return StateManager.Global.set( key, value, cache );
+        return StateManager.Global.set( key, value, options );
     }
 
     /* INSTANCE */
@@ -126,8 +134,8 @@ export class StateManager
         return this.state<T>( key ).get( value );
     }
 
-    public set<T>( key: string, value: T, cache: boolean = false )
+    public set<T>( key: string, value: T, options: SetStateOptions = {})
     {
-        this.state<T>( key ).set( value, cache );
+        this.state<T>( key ).set( value, options );
     }
 }
