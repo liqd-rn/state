@@ -1,13 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import objectHash from '@liqd-js/fast-object-hash';
 
-type StateValue<T> = { value: T|undefined };
+type StateValue<T> = { value: T | undefined };
 
 type SetStateOptions = 
 {
     cache?: boolean 
     force?: boolean
 };
+
+export class Ref
+{
+    public static use<T extends Record<string, any>>( value: T ): T
+    {
+        const ref = useRef<T>( new Proxy( value, 
+        {
+            get( target: T, key: keyof T extends string ? keyof T : never )
+            {
+                return target[ key ];
+            },
+            set( target: T, key: keyof T extends string ? keyof T : never, value: any )
+            {
+                return target[ key ] = value;
+            }
+        }));
+
+        return ref.current;
+    }
+}
 
 export class State<T>
 {
@@ -75,6 +95,11 @@ export class State<T>
         }
     }
 
+    public get(): T | undefined
+    {
+        return this.value;
+    }
+
     private unset()
     {
         this.hash = '';
@@ -118,6 +143,11 @@ export class StateManager
         return StateManager.Global.set( key, value, options );
     }
 
+    public static get<T>( key: string ): T | undefined
+    {
+        return StateManager.Global.get( key );
+    }
+
     /* INSTANCE */
 
     private states = new Map<string, State<any>>();
@@ -144,5 +174,10 @@ export class StateManager
     public set<T>( key: string, value: T, options: SetStateOptions = {})
     {
         this.state<T>( key ).set( value, options );
+    }
+
+    public get<T>( key: string ): T | undefined
+    {
+        return this.states.get( key )?.get();
     }
 }

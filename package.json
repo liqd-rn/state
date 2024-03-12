@@ -1,6 +1,6 @@
 {
   "name": "@liqd-rn/state",
-  "version": "1.4.4",
+  "version": "1.5.0",
   "description": "",
   "author": "radixxko",
   "license": "MIT",
@@ -17,14 +17,14 @@
     "url": "git+https://github.com/liqd-rn/state.git"
   },
   "dependencies": {
-    "@liqd-js/fast-object-hash": "^1.0.0"
+    "@liqd-js/fast-object-hash": "^1.0.2"
   },
   "peerDependencies": {
     "react": "*"
   },
   "devDependencies": {
     "react": "18.2.0",
-    "@types/react": "^18.2.61",
-    "typescript": "^5.3.3"
+    "@types/react": "^18.2.65",
+    "typescript": "^5.4.2"
   }
 }
