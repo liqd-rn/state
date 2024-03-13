@@ -5,7 +5,7 @@ type StateValue<T> = { value: T | undefined };
 
 type SetStateOptions = 
 {
-    cache?: boolean 
+    cache?: boolean
     force?: boolean
 };
 
@@ -35,6 +35,12 @@ export class State<T>
     private value: T | undefined;
     private setters = new Set<React.Dispatch<React.SetStateAction<StateValue<T>>>>();
     private cache: boolean = false;
+
+    public constructor( value?: T, options: Omit<SetStateOptions, 'force'> = {} )
+    {
+        this.value = value;
+        this.cache = options.cache ?? false;
+    }
 
     public use(): T | undefined
     public use( value?: T ): T
@@ -93,6 +99,11 @@ export class State<T>
                 }
             }
         }
+    }
+
+    public get active()
+    {
+        return this.setters.size > 0;
     }
 
     public get(): T | undefined
