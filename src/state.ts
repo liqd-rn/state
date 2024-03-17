@@ -5,8 +5,9 @@ type StateValue<T> = { value: T | undefined };
 
 type SetStateOptions = 
 {
-    cache?: boolean
-    force?: boolean
+    cache       ?: boolean
+    force       ?: boolean
+    onRelease   ?: () => void
 };
 
 export class Ref
@@ -35,11 +36,13 @@ export class State<T>
     private value: T | undefined;
     private setters = new Set<React.Dispatch<React.SetStateAction<StateValue<T>>>>();
     private cache: boolean = false;
+    private onRelease?: () => void;
 
     public constructor( value?: T, options: Omit<SetStateOptions, 'force'> = {} )
     {
         this.value = value;
         this.cache = options.cache ?? false;
+        this.onRelease = options.onRelease;
     }
 
     public use(): T | undefined
@@ -56,7 +59,11 @@ export class State<T>
         {
             this.setters!.delete( set );
 
-            !this.cache && !this.setters.size && this.unset();
+            if( !this.setters.size )
+            {
+                !this.cache && this.unset();
+                this?.onRelease?.();
+            }
         },
         []);
 
