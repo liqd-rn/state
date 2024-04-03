@@ -3,6 +3,9 @@ import objectHash from '@liqd-js/fast-object-hash';
 
 type StateValue<T> = { value: T | undefined };
 
+type StateEvent = 'update';
+type StateUpdateHandler<T> = ( value: T | undefined ) => void;
+
 type SetStateOptions = 
 {
     cache       ?: boolean
@@ -37,12 +40,33 @@ export class State<T>
     private setters = new Set<React.Dispatch<React.SetStateAction<StateValue<T>>>>();
     private cache: boolean = false;
     private onRelease?: () => void;
+    private handlers = { update: new Set<StateUpdateHandler<T>>()};
+    private releaseTimeout?: number;
 
     public constructor( value?: T, options: Omit<SetStateOptions, 'force'> = {} )
     {
         this.value = value;
         this.cache = options.cache ?? false;
         this.onRelease = options.onRelease;
+    }
+
+    private tryRelease()
+    {
+        if( this.releaseTimeout )
+        {
+            clearTimeout( this.releaseTimeout );
+            this.releaseTimeout = undefined;
+        }
+
+        !this.active && ( this.releaseTimeout = setTimeout(() =>
+        {
+            if( !this.active )
+            {
+                !this.cache && this.unset();
+                this?.onRelease?.();
+            }
+        },
+        250 ));
     }
 
     public use(): T | undefined
@@ -58,12 +82,7 @@ export class State<T>
         useEffect(() => () => 
         {
             this.setters!.delete( set );
-
-            if( !this.setters.size )
-            {
-                !this.cache && this.unset();
-                this?.onRelease?.();
-            }
+            this.tryRelease();
         },
         []);
 
@@ -104,13 +123,15 @@ export class State<T>
                         //console.error( 'State.set', e );
                     }
                 }
+
+                this.handlers.update.forEach( handler => handler( value ));
             }
         }
     }
 
     public get active()
     {
-        return this.setters.size > 0;
+        return this.setters.size > 0 || this.handlers.update.size > 0;
     }
 
     public get(): T | undefined
@@ -122,6 +143,22 @@ export class State<T>
     {
         this.hash = '';
         this.value = undefined;
+    }
+
+    public on( event: StateEvent, callback: StateUpdateHandler<T> ): this
+    {
+        this.handlers[event].add( callback );
+
+        return this;
+    }
+
+    public off( event: StateEvent, callback: StateUpdateHandler<T> ): this
+    {
+        this.handlers[event].delete( callback );
+
+        this.tryRelease();
+
+        return this;
     }
 }
 
