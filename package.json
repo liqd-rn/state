@@ -1,6 +1,6 @@
 {
   "name": "@liqd-rn/state",
-  "version": "1.5.8",
+  "version": "1.6.0",
   "description": "",
   "author": "radixxko",
   "license": "MIT",
@@ -8,9 +8,10 @@
   "types": "dist/state.d.ts",
   "files": [ "dist/**/*" ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "version": "npm i && tsc && npm publish --access public"
+    "clean": "rm -rf dist package-lock.json node_modules && npm i",
+    "build": "npm run clean && tsc",
+    "version": "git pull && npm run build && npm publish && npm run commit && git push",
+    "commit": "node -e \"const version = require('./package.json').version.trim(); require('child_process').execSync('git add . && git commit -m \\\"Version ' + version + '\\\"');\""
   },
   "repository": {
     "type": "git",
@@ -23,8 +24,8 @@
     "react": "*"
   },
   "devDependencies": {
-    "react": "18.3.1",
-    "@types/react": "^18.3.10",
-    "typescript": "^5.6.2"
+    "react": "19.1.0",
+    "@types/react": "^19.1.8",
+    "typescript": "^5.8.3"
   }
 }
